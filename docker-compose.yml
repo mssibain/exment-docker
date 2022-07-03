@@ -1,0 +1,71 @@
+version: '3.7'
+services:
+  # https-portal:
+  #   image: steveltn/https-portal:1
+  #   container_name: shirasagi_https-portal
+  #   ports:
+  #     - '80:80'
+  #     - '443:443'
+  #   environment:
+  #     DOMAINS: >-
+  #       your.domain -> http://nginx
+  #     # STAGE: 'production' # Don't use production until staging works
+  #     WORKER_PROCESSES: auto
+  #     WORKER_CONNECTIONS: 2048
+  #     CLIENT_MAX_BODY_SIZE: '128M'
+  #   links:
+  #     - nginx
+  #   volumes:
+  #     - ./certs:/var/lib/https-portal
+  #   restart: always
+  nginx:
+    #image: owasp/modsecurity-crs:v3.3.2-nginx
+    image: nginx:1.23.0
+    ports:
+      - 127.0.0.1:38080:38080
+    volumes:
+      - ./nginx/conf.d/exment.conf:/etc/nginx/conf.d/exment.conf
+      - ./nginx/log:/var/log/nginx
+      - www-data:/var/www
+    depends_on:
+      - exment
+    links:
+      - exment
+  exment:
+    build: 
+      context: ./php
+      args:
+        wwwpassword: ${WWWPASSWORD}
+    volumes:
+      - ./php/exment_env:/var/www/html/exment/.env
+      - ./php/www.conf:/usr/local/etc/php-fpm.d/www.conf
+      - ./php/php.ini:/usr/local/etc/php/php.ini
+      - www-data:/var/www
+    links:
+      - rdb
+    depends_on:
+      - rdb
+  rdb:
+    image: mariadb:10.7.4
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    environment:
+      # 互換性維持のためにMYSQL_にしておく
+      # .envからパスワードとかを設定させる
+      MYSQL_DATABASE: ${DATABASE}
+      MYSQL_ROOT_PASSWORD: ${ROOTPASS}
+      MYSQL_USER: ${USERNAME}
+      MYSQL_PASSWORD: ${USERPASS}
+  redis:
+    image: redis:6.2.7
+    command: redis-server --appendonly yes
+    volumes:
+       - redis-data:/data
+volumes:
+  www-data:
+    driver: local
+  mysql-data:
+    driver: local
+  redis-data:
+      driver: local
