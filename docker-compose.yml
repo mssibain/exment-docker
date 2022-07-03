@@ -22,7 +22,7 @@ services:
     #image: owasp/modsecurity-crs:v3.3.2-nginx
     image: nginx:1.23.0
     ports:
-      - 127.0.0.1:38080:38080
+      - 80:80
     volumes:
       - ./nginx/conf.d/exment.conf:/etc/nginx/conf.d/exment.conf
       - ./nginx/log:/var/log/nginx
